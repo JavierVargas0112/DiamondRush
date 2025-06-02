@@ -126,6 +126,84 @@ class Player:
             print(f"Movido derecha a {self.current.coordinates}")
         else:
             print("No se puede mover a la derecha")
+    
+    from collections import deque
+
+def BFS(grid, start_x, start_y):
+    # Dimensiones de la grilla
+    m = len(grid)
+    n = len(grid[0])
+    
+    # Cola para BFS
+    q = deque()
+    q.append((start_x, start_y))
+    
+    # Matriz de visitados
+    visited = [[False] * n for _ in range(m)]
+    visited[start_x][start_y] = True
+    
+    # Direcciones de movimiento (arriba, abajo, izquierda, derecha)
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    
+    pared = "#"
+    diamante = "B"
+    final_x = 0
+    final_y = 0
+    found = False
+    while q:
+        x, y = q.popleft()
+        
+        # Explorar vecinos
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+            
+            # Verificar límites y si el nodo no ha sido visitado
+            if 0 <= nx < m and 0 <= ny < n and not visited[nx][ny] and grid[nx][ny] != pared:
+                 # Procesar el nodo actual
+                found = True if grid[nx][ny] == diamante else False
+                BuildPath(grid, x, y, dx, dy)
+                visited[nx][ny] = True
+                q.append((nx, ny))
+                if found:
+                    print(f"¡Diamante encontrado en: ({nx}, {ny})!")
+                    final_x, final_y = nx, ny
+                    break
+    for row in grid:
+      print("".join(row))
+    print("Recorrido final:")
+    finalPath = TrackPath(grid, final_x, final_y)
+    print(f"Camino encontrado: {finalPath}")
+                  
+
+def TrackPath(grid, final_x, final_y):
+  path = ""
+  while grid[final_x][final_y] != "A":
+   
+    direction = grid[final_x][final_y]
+    path = direction + path
+    if direction == "U":
+      final_x += 1
+    elif direction == "D":
+      final_x -= 1
+    elif direction == "L":
+      final_y += 1
+    elif direction == "R":
+      final_y -= 1
+  return path
+   
+def BuildPath(grid,x,y,dx,dy):
+    nx, ny = x + dx, y + dy
+    if dy!= 0:
+        if dy > 0:
+            grid[nx][ny] = "R"
+        else:
+            grid[nx][ny] = "L"
+    else:
+        if dx > 0:
+            grid[nx][ny] = "D"
+        else:
+            grid[nx][ny] = "U"
+
 
     
     
