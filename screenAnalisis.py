@@ -130,3 +130,36 @@ plt.axis("off")
 plt.title("Área de Juego con Cuadrícula")
 plt.show()
 
+ 
+# === 10. (Opcional) Crear e imprimir mapa virtual con letras pa ver mejor ===
+
+# Mapeo de tipo a letra
+tipo_a_letra = {
+    "jugador": "J",
+    "roca": "R",
+    "camino": "C",
+    "pared": "P",
+    "salida": "S",
+    "boton": "B",
+    "diamante": "D",
+    "puas": "U",
+    "puerta": "T",
+    "otro": "X"
+}
+
+# Inicializar matriz vacía
+mapa_virtual = [['' for _ in range(GRID_COLS)] for _ in range(GRID_ROWS)]
+
+# Rellenar matriz
+for row, col, tipo in coordenadas_tipo:
+    letra = tipo_a_letra.get(tipo, ".")
+    mapa_virtual[row][col] = letra
+
+# Función para imprimir
+def imprimir_mapa(matriz):
+    print("\n=== MAPA VIRTUAL ===")
+    for fila in matriz:
+        print(" ".join(fila))
+
+# Imprimir mapa en consola
+imprimir_mapa(mapa_virtual)
