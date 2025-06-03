@@ -104,9 +104,9 @@ def mostrar_grid_imagen(game_area):
 
 # === Pruebas =======
 
-matriz, conteo, area = obtener_matriz_y_conteo("screenshot/1.png")
-imprimir_mapa(matriz)
-print("\nConteo de objetos por tipo:")
+#matriz, conteo, area = obtener_matriz_y_conteo("screenshot/1.png")
+#imprimir_mapa(matriz)
+#print("\nConteo de objetos por tipo:")
 # for tipo in sorted(conteo):
 #     print(f" - {tipo}: {conteo[tipo]}")
 # mostrar_grid_imagen(area)

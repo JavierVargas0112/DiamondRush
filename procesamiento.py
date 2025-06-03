@@ -2,84 +2,14 @@ from collections import deque
 from Analisis_2a import obtener_matriz_y_conteo
 import copy
 
-# === Lógica de nodos y grafo ===
-
-class Node:
-    def __init__(self, name=None):
-        self.name = name
-        self.coordinates = ()
-        self.left = None
-        self.right = None
-        self.up = None
-        self.down = None
-
-class graph:
-    def __init__(self, matrix):
-        self.matrix = matrix
-        self.nodeMatrix = []
-        self.start = None
-        self.create_graph(matrix)
-
-    def create_graph(self, matrix):
-        rows = len(matrix)
-        cols = len(matrix[0]) if rows > 0 else 0
-
-        self.nodeMatrix = []
-        for i in range(rows):
-            row = []
-            for j in range(cols):
-                valor = matrix[i][j]
-                node = Node(name=valor)
-                node.coordinates = (i, j)
-                row.append(node)
-                if valor == 'J':  # Jugador
-                    self.start = node
-            self.nodeMatrix.append(row)
-
-        for i in range(rows):
-            for j in range(cols):
-                node = self.nodeMatrix[i][j]
-                if node.name == 'P':  # Pared: no conecta
-                    continue
-                if i > 0 and self.nodeMatrix[i-1][j].name != 'P':
-                    node.up = [self.nodeMatrix[i-1][j], True]
-                if i < rows-1 and self.nodeMatrix[i+1][j].name != 'P':
-                    node.down = [self.nodeMatrix[i+1][j], True]
-                if j > 0 and self.nodeMatrix[i][j-1].name != 'P':
-                    node.left = [self.nodeMatrix[i][j-1], True]
-                if j < cols-1 and self.nodeMatrix[i][j+1].name != 'P':
-                    node.right = [self.nodeMatrix[i][j+1], True]
-
-    def visualizar_nodematrix(self):
-        for fila in self.nodeMatrix:
-            print(" ".join([nodo.name for nodo in fila]))
-
-class Player:
-    def __init__(self, nodoActual):
-        self.nodoActual = nodoActual
-
-    def ir(self, direccion):
-        if direccion == "arriba" and self.nodoActual.up and self.nodoActual.up[1]:
-            self.nodoActual = self.nodoActual.up[0]
-            return True
-        elif direccion == "abajo" and self.nodoActual.down and self.nodoActual.down[1]:
-            self.nodoActual = self.nodoActual.down[0]
-            return True
-        elif direccion == "izquierda" and self.nodoActual.left and self.nodoActual.left[1]:
-            self.nodoActual = self.nodoActual.left[0]
-            return True
-        elif direccion == "derecha" and self.nodoActual.right and self.nodoActual.right[1]:
-            self.nodoActual = self.nodoActual.right[0]
-            return True
-        return False
-
-    def obtenerNombre(self):
-        return self.nodoActual.name
-
-    def obtenerCoordenadas(self):
-        return self.nodoActual.coordinates
-
 # === BFS para encontrar el diamante 'D' ===
+global tiene_llave
+tiene_llave = False
+
+def pisar_pua(grid, x, y):
+    if grid[x][y] == 'U':
+        grid[x][y] = 'P'
+    return
 
 def BuildPath(grid, x, y, dx, dy):
     nx, ny = x + dx, y + dy
@@ -103,93 +33,168 @@ def TrackPath(grid, final_x, final_y):
             final_y -= 1
     return path
 
+
 def BFS(grid, start_x, start_y, objetivo):
+    global tiene_llave
+
     m, n = len(grid), len(grid[0])
     q = deque()
-    q.append((start_x, start_y))
-    visited = [[False]*n for _ in range(m)]
-    visited[start_x][start_y] = True
     path_grid = copy.deepcopy(grid)
-    path_grid[start_x][start_y] = "J"  # Marca la posición inicial
+    path_grid[start_x][start_y] = "J"
+    q.append((start_x, start_y, path_grid))
+    visited = set()
 
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # U, D, L, R
 
     while q:
-        x, y = q.popleft()
+        x, y, path_grid = q.popleft()
+
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < m and 0 <= ny < n and not visited[nx][ny] and grid[nx][ny] != 'P':
-                visited[nx][ny] = True
-                BuildPath(path_grid, x, y, dx, dy)
-                q.append((nx, ny))
-                if grid[nx][ny] == objetivo:
-                    camino = TrackPath(path_grid, nx, ny)
-                    return (nx, ny, camino)
+            if not (0 <= nx < m and 0 <= ny < n):
+                continue
+
+            celda = grid[nx][ny]
+
+            if celda == 'P':
+                continue
+            if celda == 'T' and tiene_llave == False:
+                continue
+
+            # Si pisa una púa
+            pisar_pua(grid, nx, ny)
+
+            # Si pisa una llave
+            if celda == 'K' and tiene_llave == False:
+                tiene_llave = True
+
+                grid[nx][ny] = 'C'
+
+            # Si pisa una puerta con llave
+            if celda == 'T' and tiene_llave:
+                tiene_llave = False
+                grid[nx][ny] = 'C'
+
+            estado = (nx, ny)
+            if estado in visited:
+                continue
+            visited.add(estado)
+
+            nuevo_path_grid = copy.deepcopy(path_grid)
+            BuildPath(nuevo_path_grid, x, y, dx, dy)
+
+            if celda == objetivo:
+                camino = TrackPath(nuevo_path_grid, nx, ny)
+                return (nx, ny, camino)
+
+            q.append((nx, ny, nuevo_path_grid))
+
     return None
 
 
-# ===============================
-# INICIALIZAR
-# ===============================
+# ==================== logica
 
-nivel = 3  # Cambiar al nivel deseado
-ruta = f"screenshot/{nivel}.png"
-matriz, conteo, area = obtener_matriz_y_conteo(ruta)
+def encontrar_jugador(grid):
+    for i, fila in enumerate(grid):
+        for j, val in enumerate(fila):
+            if val == 'J':
+                return (i, j)
+    return None
+
+def resolver_diamantes_y_salida(grid):
+    global tiene_llave
+    tiene_llave = False
+
+    recorrido_total = ""
+    jugador_pos = encontrar_jugador(grid)
+    if not jugador_pos:
+        print("Jugador no encontrado.")
+        return ""
+
+    while True:
+        resultado = BFS(grid, *jugador_pos, 'D')
+
+        if not resultado:
+            hay_diamante = any('D' in fila for fila in grid)
+            hay_llave = any('K' in fila for fila in grid)
+            if not hay_diamante:
+                break
+            if not hay_llave:
+                print("No hay más caminos ni llaves.")
+                break
+
+            resultado_llave = BFS(grid, *jugador_pos, 'K')
+            if not resultado_llave:
+                print("No se puede acceder a ninguna llave.")
+                break
+            nx, ny, camino_k = resultado_llave
+            recorrido_total += camino_k
+            jugador_pos = (nx, ny)
+            continue
+
+        nx, ny, camino_d = resultado
+        grid[nx][ny] = 'C'
+        recorrido_total += camino_d
+        jugador_pos = (nx, ny)
+
+    # Ir a la salida
+    if not any('D' in fila for fila in grid):
+        resultado = BFS(grid, *jugador_pos, 'S')
+        if resultado:
+            nx, ny, camino_s = resultado
+            recorrido_total += camino_s
+        else:
+            print("No se pudo llegar a la salida.")
+
+    return recorrido_total
+
+
 
 # ===============================
-# PRUEBAS
+# USO
 # ===============================
-
 def imprimir_mapa(matriz):
     print("\n=== MAPA VIRTUAL ===")
     for fila in matriz:
         print(" ".join(fila))
 
-print("\nConteo de objetos por tipo:")
-for tipo in sorted(conteo):
-    print(f" - {tipo}: {conteo[tipo]}")
+nivel = 3
+ruta = f"screenshot/{nivel}.png"
+matriz, conteo, area = obtener_matriz_y_conteo(ruta)
+imprimir_mapa(matriz)
+camino_total = resolver_diamantes_y_salida(matriz)
+print("Ruta completa:", camino_total)
+
 imprimir_mapa(matriz)
 
-a = graph(matriz)
-print("Visualización del mapa:")
-a.visualizar_nodematrix()
-
-print("\nInicio del jugador en:", a.start.coordinates)
-jugador = Player(a.start)
-
-print("Nombre en posición inicial:", jugador.obtenerNombre())
-print("Coordenadas:", jugador.obtenerCoordenadas())
-
-print("\nMoviendo a la derecha...")
-if jugador.ir("derecha"):
-    print("Movimiento exitoso.")
-else:
-    print("Movimiento bloqueado.")
-print("Nueva posición:", jugador.obtenerCoordenadas(), "-", jugador.obtenerNombre())
-
+#matriz=[['S','D','C','U','C','J'],
+#        ['C','U','C','U','U','C']]
 # ===============================
-# Búsqueda completa paso a paso
+# PRUEBAS
 # ===============================
-coordenadas_actuales = a.start.coordinates
-grid_original = copy.deepcopy(matriz)
-recorrido_total = ""
 
-# Buscar todos los diamantes
-while True:
-    resultado = BFS(matriz, *coordenadas_actuales, 'D')
-    if not resultado:
-        break
-    nx, ny, camino = resultado
-    recorrido_total += camino
-    matriz[nx][ny] = 'C'  # Marcar como recogido
-    coordenadas_actuales = (nx, ny)
+# print("\nConteo de objetos por tipo:")
+# for tipo in sorted(conteo):
+#     print(f" - {tipo}: {conteo[tipo]}")
+# imprimir_mapa(matriz)
 
-# Buscar la salida
-resultado = BFS(matriz, *coordenadas_actuales, 'S')
-if resultado:
-    nx, ny, camino = resultado
-    recorrido_total += camino
+#nomenclatura: 
 
-# Mostrar camino total
-print(recorrido_total)
+# tipo_a_letra = {
+#     "jugador": "J",
+#     "roca": "R",
+#     "camino": "C",
+#     "pared": "P",
+#     "salida": "S",
+#     "boton": "B",
+#     "diamante": "D",
+#     "puas": "U",
+#     "puerta": "T",
+#     "lava": "L",
+#     "puerta_boton": "Y",
+#     "hueco": "X",
+#     "llave": "K",
+#     "otro": "?"
+# }
+
 
