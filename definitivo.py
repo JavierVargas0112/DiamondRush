@@ -2,12 +2,20 @@ import copy
 from collections import deque
 from Analisis_2a import obtener_matriz_y_conteo
 import hashlib
+from SeleniumController import move
+import captu
 
-# === BFS especializado con simulación de entorno ===
+# === BFS  simulación ===
 
+img = captu.tomar_screenshot()
+    
+bbox_level = (440, 300, 560, 360)  # (x1, y1, x2, y2)
+    
+texto_detectado = captu.extraer_texto_de_area(img, bbox_level)
+print("Texto detectado:", texto_detectado)
 
 def grid_hash(grid):
-    # Convierte la matriz en un string y calcula un hash rápido
+    # Convierte la matriz en un string y calcula un hash
     return hashlib.sha1(str(grid).encode()).hexdigest()
 
 def bfs_simulado(grid_original, start, objetivo, tiene_llave_ini):
@@ -39,10 +47,9 @@ def bfs_simulado(grid_original, start, objetivo, tiene_llave_ini):
             celda = grid[nx][ny]
 
             # --- Comportamiento de rocas y huecos ---
-            # ...dentro de bfs_simulado, reemplaza solo la parte de rocas...
             if celda == 'R' or celda == 'RD':
                 rx, ry = nx + dx, ny + dy
-                # Chequeo: la roca no puede salir del tablero
+                # La roca no puede salir del tablero
                 if not (0 <= rx < m and 0 <= ry < n):
                     continue
                 celda_detras = grid[rx][ry]
@@ -63,16 +70,16 @@ def bfs_simulado(grid_original, start, objetivo, tiene_llave_ini):
                     new_grid[rx][ry] = 'RD'
                     new_grid[nx][ny] = 'C'
                 new_grid[x][y] = 'C'
-                # Si acabas de recoger un diamante, retorna éxito
+                # Recoger diamante
                 if celda == 'RD' and 'D' not in [cell for row in new_grid for cell in row]:
                     return rx, ry, path + move, new_grid, tiene_llave
                 q.append((nx, ny, path + move, new_grid, tiene_llave))
                 continue
 
             if celda == 'X':
-                continue  # El jugador no puede pasar por huecos
+                continue  # No puede pasar por huecos
 
-            # --- Resto de lógica original ---
+            # --- objetos intransitables ---
             if celda == 'P':
                 continue
             if celda == 'S' and any('D' in fila for fila in grid):
@@ -97,7 +104,7 @@ def bfs_simulado(grid_original, start, objetivo, tiene_llave_ini):
 
     return None
 
-# === Función principal ===
+# === Funcion principal ===
 def resolver_nivel(matriz_original):
     jugador = encontrar_jugador(matriz_original)
     if not jugador:
@@ -108,11 +115,11 @@ def resolver_nivel(matriz_original):
     while stack:
         pos, camino, matriz, tiene_llave = stack.pop()
 
-        # Buscar próximo diamante
+        # Buscar proximo diamante
         if any('D' in celda for fila in matriz for celda in fila):
-            # Busca tanto 'D' como 'RD' como objetivo
             resultado = bfs_simulado(matriz, pos, ['D', 'RD'], tiene_llave)
         else:
+            #salida 
             resultado = bfs_simulado(matriz, pos, 'S', tiene_llave)
 
         if resultado:
@@ -133,7 +140,7 @@ def resolver_nivel(matriz_original):
     print("No se encontró solución.")
     return ""
 
-# === Ayudantes ===
+# === funciones ===
 def encontrar_jugador(grid):
     for i, fila in enumerate(grid):
         for j, val in enumerate(fila):
@@ -146,13 +153,25 @@ def imprimir_mapa(matriz):
     for fila in matriz:
         print(" ".join(fila))
 
+# === Ejecución ===
 
-# nivel = 4
-# ruta = f"screenshot/{nivel}.png"
-# matriz, conteo, area = obtener_matriz_y_conteo(ruta)
-matriz = [
-    ['J', 'C', 'C', 'C', 'R', 'C', 'D', 'C'],
-    ['P', 'P', 'P', 'P', 'P', 'S', 'P', 'P'],
-]
+nivel = texto_detectado.strip().split()[-1] 
+ruta = f"screenshot/{nivel}.png"
+matriz, conteo, area = obtener_matriz_y_conteo(ruta)
+# matriz = [
+#     ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+#     ['C', 'C', 'C', 'C', 'J', 'C', 'C', 'C'],
+#     ['C', 'R', 'D', 'D', 'C', 'C', 'C', 'C'],
+#     ['B', 'P', 'P', 'Y', 'P', 'P', 'P', 'P'],
+#     ['D', 'C', 'C', 'R', 'D', 'D', 'C', 'P'],
+#     ['P', 'C', 'C', 'C', 'C', 'C', 'C', 'B'],
+#     ['P', 'Y', 'P', 'P', 'P', 'P', 'P', 'P'],
+#     ['C', 'C', 'P', 'C', 'C', 'D', 'C', 'C'],
+#     ['C', 'C', 'C', 'C', 'C', 'C', 'D', 'C'],
+#     ['C', 'P', 'C', 'P', 'C', 'P', 'Y', 'P'],
+#     ['C', 'R', 'C', 'P', 'B', 'P', 'D', 'C'],
+#     ['D', 'D', 'D', 'P', 'D', 'P', 'C', 'S'],
+# ]
 imprimir_mapa(matriz)
 resultado = resolver_nivel(matriz)
+move(resultado)
