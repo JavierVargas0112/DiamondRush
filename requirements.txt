@@ -1,5 +1,7 @@
-pip install numpy Pillow matplotlib opencv-python keyboard pydirectinput
+pip install numpy Pillow matplotlib opencv-python keyboard pydirectinput pytesseract
 
-lvls
+Instalar tesseract:
 
-1 2 3 7 9*
+https://github.com/UB-Mannheim/tesseract/wiki
+
+lvl logrados: 1 2 3 7 

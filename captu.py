@@ -22,11 +22,11 @@ def extraer_texto_de_area(imagen, bbox):
     texto = pytesseract.image_to_string(gris, config='--psm 7')  # psm 7 = una línea de texto
     return texto.strip()
 
-if __name__ == "__main__":
-    img = tomar_screenshot()
+
+img = tomar_screenshot()
     
-    # Cambia estas coordenadas para la zona donde aparece "LEVEL X"
-    bbox_level = (430, 250, 560, 310)  # Ejemplo: (x1, y1, x2, y2)
+# Cambia estas coordenadas para la zona donde aparece "LEVEL X"
+bbox_level = (430, 250, 560, 310)  # Ejemplo: (x1, y1, x2, y2)
     
-    texto_detectado = extraer_texto_de_area(img, bbox_level)
-    print("Texto detectado:", texto_detectado)
+texto_detectado = extraer_texto_de_area(img, bbox_level)
+print("Texto detectado:", texto_detectado)
