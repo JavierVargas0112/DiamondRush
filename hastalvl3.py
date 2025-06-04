@@ -2,8 +2,19 @@ import copy
 from collections import deque
 from Analisis_2a import obtener_matriz_y_conteo
 import hashlib
+import captu
+from SeleniumController import move
 
 # === BFS especializado con simulación de entorno ===
+
+
+img = captu.tomar_screenshot()
+    
+# Cambia estas coordenadas para la zona donde aparece "LEVEL X"
+bbox_level = (430, 250, 560, 310)  # Ejemplo: (x1, y1, x2, y2)
+    
+texto_detectado = captu.extraer_texto_de_area(img, bbox_level)
+print("Texto detectado:", texto_detectado)
 
 
 def grid_hash(grid):
@@ -228,7 +239,7 @@ def imprimir_mapa(matriz):
         print(" ".join(fila))
 
 
-nivel = 1
+nivel = texto_detectado.strip().split()[-1]  # Extrae el nivel del texto detectado
 ruta = f"screenshot/{nivel}.png"
 matriz, conteo, area = obtener_matriz_y_conteo(ruta)
 # matriz = [
@@ -241,3 +252,5 @@ matriz, conteo, area = obtener_matriz_y_conteo(ruta)
 # ]
 imprimir_mapa(matriz)
 resultado = resolver_nivel(matriz)
+
+move(resultado)
