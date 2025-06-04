@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import os
 
-# === CONFIGURACIÓN GENERAL ===
+# === General  ===
 elements_path = "elements2"
 GRID_COLS = 8
 GRID_ROWS = 12
@@ -17,7 +17,7 @@ x2, y2 = 770, 954
 cell_width = (x2 - x1) // GRID_COLS
 cell_height = (y2 - y1) // GRID_ROWS
 
-# === 1. Cargar imágenes de referencia clasificadas ===
+# === Cargar imágenes de referencia clasificadas ===
 referencias = {}
 for tipo in os.listdir(elements_path):
     tipo_path = os.path.join(elements_path, tipo)
@@ -30,7 +30,7 @@ for tipo in os.listdir(elements_path):
             ref_cv = cv2.cvtColor(np.array(ref_img), cv2.COLOR_RGB2BGR)
             referencias[tipo].append(ref_cv)
 
-# === 2. Diccionario de letras para visualización ===
+# ===  Diccionario de letras para visualización ===
 tipo_a_letra = {
     "jugador": "J",
     "roca": "R",
@@ -48,7 +48,7 @@ tipo_a_letra = {
     "otro": "?"
 }
 
-# === 3. Clasificador por similitud ===
+# === Clasificador por similitud ===
 def match_cell(cell_img_cv):
     max_score = -1
     best_tipo = "otro"
@@ -61,7 +61,7 @@ def match_cell(cell_img_cv):
                 best_tipo = tipo
     return best_tipo if max_score >= UMBRAL_SIMILITUD else "otro"
 
-# === 4. Función principal===
+# ===  Función principal===
 def obtener_matriz_y_conteo(ruta_screenshot):
     screenshot = Image.open(ruta_screenshot).convert("RGB")
     game_area = screenshot.crop((x1, y1, x2, y2))
@@ -84,13 +84,13 @@ def obtener_matriz_y_conteo(ruta_screenshot):
 
     return mapa_virtual, conteo, game_area
 
-# === 5. Función para imprimir matriz ===
+# === Función para imprimir matriz ===
 def imprimir_mapa(matriz):
     print("\n=== MAPA VIRTUAL ===")
     for fila in matriz:
         print(" ".join(fila))
 
-# === 6. Visualización (opcional) ===
+# === Visualización ===
 def mostrar_grid_imagen(game_area):
     fig, ax = plt.subplots(figsize=(6, 9))
     ax.imshow(game_area)
