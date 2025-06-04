@@ -1,0 +1,5 @@
+pip install numpy Pillow matplotlib opencv-python keyboard pydirectinput
+
+lvls
+
+1 2 3 7 9*

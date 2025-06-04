@@ -10,81 +10,6 @@ def grid_hash(grid):
     # Convierte la matriz en un string y calcula un hash rápido
     return hashlib.sha1(str(grid).encode()).hexdigest()
 
-def diamantes_accesibles(matriz, pos, tiene_llave):
-    """
-    Verifica si es posible recoger todos los diamantes ('D' o 'RD') en algún orden,
-    simulando la recogida y también permitiendo tapar huecos con rocas si es necesario.
-    """
-    m, n = len(matriz), len(matriz[0])
-    diamantes = [(i, j) for i in range(m) for j in range(n) if matriz[i][j] in ('D', 'RD')]
-    if not diamantes:
-        return True
-
-    def puede_recoger_todos(matriz_actual, pos_actual, tiene_llave_actual, diamantes_restantes, visitados):
-        if not diamantes_restantes:
-            return True
-        for idx, (dx, dy) in enumerate(diamantes_restantes):
-            resultado = bfs_simulado(matriz_actual, pos_actual, (dx, dy), tiene_llave_actual)
-            if resultado:
-                nx, ny, _, nueva_matriz, nuevo_tiene_llave = resultado
-                nueva_matriz = copy.deepcopy(nueva_matriz)
-                nueva_matriz[nx][ny] = 'C'
-                hash_estado = (nx, ny, nuevo_tiene_llave, tuple(tuple(row) for row in nueva_matriz))
-                if hash_estado in visitados:
-                    continue
-                visitados.add(hash_estado)
-                nuevos_diamantes = diamantes_restantes[:idx] + diamantes_restantes[idx+1:]
-                if puede_recoger_todos(nueva_matriz, (nx, ny), nuevo_tiene_llave, nuevos_diamantes, visitados):
-                    return True
-                visitados.remove(hash_estado)
-        # Si no se puede recoger ningún diamante, intenta tapar huecos con rocas
-        for i in range(m):
-            for j in range(n):
-                if matriz_actual[i][j] in ('R', 'RD'):
-                    for dx, dy, move in [(-1,0,'U'),(1,0,'D'),(0,-1,'L'),(0,1,'R')]:
-                        ni, nj = i + dx, j + dy
-                        if 0 <= ni < m and 0 <= nj < n and matriz_actual[ni][nj] == 'X':
-                            px, py = i - dx, j - dy
-                            if 0 <= px < m and 0 <= py < n and matriz_actual[px][py] == 'C':
-                                resultado = bfs_simulado(matriz_actual, pos_actual, (px, py), tiene_llave_actual)
-                                if resultado:
-                                    _, _, camino, nueva_matriz, nuevo_tiene_llave = resultado
-                                    nueva_matriz = copy.deepcopy(nueva_matriz)
-                                    nueva_matriz[ni][nj] = 'C'
-                                    nueva_matriz[i][j] = 'C'
-                                    hash_estado = (ni, nj, nuevo_tiene_llave, tuple(tuple(row) for row in nueva_matriz))
-                                    if hash_estado in visitados:
-                                        continue
-                                    visitados.add(hash_estado)
-                                    # Intenta de nuevo recoger diamantes después de tapar el hueco
-                                    if puede_recoger_todos(nueva_matriz, (ni, nj), nuevo_tiene_llave, diamantes_restantes, visitados):
-                                        return True
-                                    visitados.remove(hash_estado)
-        return False
-
-    return puede_recoger_todos(copy.deepcopy(matriz), pos, tiene_llave, diamantes, set())
-
-def buscar_y_tapar_hueco(matriz, pos, tiene_llave):
-    m, n = len(matriz), len(matriz[0])
-    for i in range(m):
-        for j in range(n):
-            if matriz[i][j] in ('R', 'RD'):
-                for dx, dy, move in [(-1,0,'U'),(1,0,'D'),(0,-1,'L'),(0,1,'R')]:
-                    ni, nj = i + dx, j + dy
-                    if 0 <= ni < m and 0 <= nj < n:
-                        if matriz[ni][nj] == 'X':
-                            # Busca camino del jugador hasta la posición para empujar la roca
-                            px, py = i - dx, j - dy
-                            if 0 <= px < m and 0 <= py < n and matriz[px][py] == 'C':
-                                resultado = bfs_simulado(matriz, pos, (px, py), tiene_llave)
-                                if resultado:
-                                    _, _, camino, nueva_matriz, nuevo_tiene_llave = resultado
-                                    # Empuja la roca al hueco
-                                    nueva_matriz[ni][nj] = 'C'
-                                    nueva_matriz[i][j] = 'C'
-                                    return (ni, nj, camino + move, nueva_matriz, nuevo_tiene_llave)
-    return None
-
 def bfs_simulado(grid_original, start, objetivo, tiene_llave_ini):
     m, n = len(grid_original), len(grid_original[0])
     q = deque()
@@ -185,6 +110,7 @@ def resolver_nivel(matriz_original):
 
         # Buscar próximo diamante
         if any('D' in celda for fila in matriz for celda in fila):
+            # Busca tanto 'D' como 'RD' como objetivo
             resultado = bfs_simulado(matriz, pos, ['D', 'RD'], tiene_llave)
         else:
             resultado = bfs_simulado(matriz, pos, 'S', tiene_llave)
@@ -200,16 +126,9 @@ def resolver_nivel(matriz_original):
                     print("Ruta completa:", nuevo_total + camino_salida)
                     imprimir_mapa(matriz_final)
                     return nuevo_total + camino_salida
-            nueva_matriz[nx][ny] = 'C'
-            if diamantes_accesibles(nueva_matriz, (nx, ny), nuevo_tiene_llave):
+            else:
+                nueva_matriz[nx][ny] = 'C'
                 stack.append(((nx, ny), nuevo_total, nueva_matriz, nuevo_tiene_llave))
-
-        # SIEMPRE intenta también tapar huecos, aunque haya diamantes accesibles
-        resultado_hueco = buscar_y_tapar_hueco(matriz, pos, tiene_llave)
-        if resultado_hueco:
-            nx, ny, nuevo_camino, nueva_matriz, nuevo_tiene_llave = resultado_hueco
-            nuevo_total = camino + nuevo_camino
-            stack.append(((nx, ny), nuevo_total, nueva_matriz, nuevo_tiene_llave))
 
     print("No se encontró solución.")
     return ""
@@ -228,16 +147,8 @@ def imprimir_mapa(matriz):
         print(" ".join(fila))
 
 
-nivel = 1
+nivel = 20
 ruta = f"screenshot/{nivel}.png"
 matriz, conteo, area = obtener_matriz_y_conteo(ruta)
-# matriz = [
-#     ['P', 'P', 'P', 'P', 'P', 'J', 'P', 'P'],
-#     ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C'],
-#     ['C', 'R', 'C', 'C', 'C', 'C', 'C', 'C'],
-#     ['P', 'C', 'C', 'R', 'P', 'X', 'P', 'C'],
-#     ['P', 'P', 'X', 'D', 'P', 'S', 'P', 'C'],
-#     ['P', 'P', 'P', 'D', 'P', 'P', 'P', 'C'],
-# ]
 imprimir_mapa(matriz)
 resultado = resolver_nivel(matriz)

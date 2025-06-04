@@ -5,7 +5,7 @@ import pydirectinput
 import time
 
 # Secuencia y mapeo
-sequence = 'UUDDLRLR'
+sequence = 'LLLLLDLUUUUUUUUURURDRRDDDRRUDLLDDLLD'
 key_map = {
     'U': 'up',
     'D': 'down',
